@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const selects = {
     origen: document.getElementById('origen'),
     destino: document.getElementById('destino'),
-    lugarObligatorio: document.getElementById('lugar_obligatorio')
+    lugarObligatorio: document.getElementById('lugar_obligatorio'),
+    servicio: document.getElementById('servicio')
   };
 
   let network = null;
@@ -30,33 +31,63 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingEl.classList.toggle('hidden', !isLoading);
   };
 
-  const appendOption = (select, value, label = value) => {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = label;
-    select.appendChild(option);
+  const llenarSelect = (id, valores) => {
+    const select = document.getElementById(id);
+    if (!select) return;
+
+    select.innerHTML = '';
+
+    valores.forEach((valor) => {
+      const option = document.createElement('option');
+      option.value = valor;
+      option.textContent = valor === '' ? 'Ninguno' : valor.replaceAll('_', ' ');
+      select.appendChild(option);
+    });
   };
 
-  const loadPlaces = async () => {
+  const cargarLugares = async () => {
     try {
       const response = await fetch('/api/lugares');
-      if (!response.ok) throw new Error('No se pudieron cargar los lugares.');
-
       const data = await response.json();
-      const lugares = Array.isArray(data) ? data : data.resultados || data.lugares || [];
+      console.log('Lugares recibidos:', data);
 
-      if (!lugares.length) {
-        showMessage('No hay lugares disponibles para consultar.', 'info');
+      if (!response.ok) throw new Error(data.error || 'No se pudieron cargar los lugares.');
+
+      if (!data.success) {
+        const error = data.error || 'Respuesta inválida al cargar lugares.';
+        console.error('Error al cargar lugares:', error);
+        showMessage(`Error al cargar lugares: ${error}`, 'error');
         return;
       }
 
-      lugares.forEach((lugar) => {
-        appendOption(selects.origen, lugar);
-        appendOption(selects.destino, lugar);
-        appendOption(selects.lugarObligatorio, lugar);
-      });
+      const lugares = data.resultados || [];
+      llenarSelect('origen', lugares);
+      llenarSelect('destino', lugares);
+      llenarSelect('lugar_obligatorio', ['', ...lugares]);
     } catch (error) {
       showMessage(`Error al cargar lugares: ${error.message}`, 'error');
+    }
+  };
+
+  const cargarServicios = async () => {
+    try {
+      const response = await fetch('/api/servicios');
+      const data = await response.json();
+      console.log('Servicios recibidos:', data);
+
+      if (!response.ok) throw new Error(data.error || 'No se pudieron cargar los servicios.');
+
+      if (!data.success) {
+        const error = data.error || 'Respuesta inválida al cargar servicios.';
+        console.error('Error al cargar servicios:', error);
+        showMessage(`Error al cargar servicios: ${error}`, 'error');
+        return;
+      }
+
+      const servicios = data.resultados || [];
+      llenarSelect('servicio', ['', ...servicios]);
+    } catch (error) {
+      showMessage(`Error al cargar servicios: ${error.message}`, 'error');
     }
   };
 
@@ -141,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lugar_obligatorio: form.lugar_obligatorio.value || null,
       costo_min: form.costo_min.value ? Number(form.costo_min.value) : null,
       costo_max: form.costo_max.value ? Number(form.costo_max.value) : null,
-      min_turisticos: form.min_puntos.value ? Number(form.min_puntos.value) : null
+      min_turisticos: form.min_turisticos.value ? Number(form.min_turisticos.value) : null
     };
 
     try {
@@ -167,5 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  loadPlaces();
+  cargarLugares();
+  cargarServicios();
 });

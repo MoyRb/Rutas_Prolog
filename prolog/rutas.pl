@@ -473,3 +473,130 @@ ruta_mixta(Origen, Destino, Ruta) :-
 % ?- tipos_de_ruta([uruapan, patzcuaro, morelia], Tipos).
 % ?- ruta_por_tipo(morelia, quiroga, libre, Ruta).
 % ?- ruta_mixta(morelia, lazaro_cardenas, Ruta).
+
+% ---------------------------------------------------------
+% 9) RESTRICCIONES POR PRESUPUESTO Y CONSULTAS AVANZADAS
+% ---------------------------------------------------------
+% En esta sección agregamos predicados para filtrar rutas por:
+% - Presupuesto máximo.
+% - Rango de costo permitido.
+% - Conteo de servicios dentro de una ruta.
+% - Cantidad mínima de lugares turísticos.
+% - Combinación de múltiples condiciones en una sola consulta.
+
+% ruta_en_presupuesto/4
+% ruta_en_presupuesto(Origen, Destino, PresupuestoMaximo, Ruta).
+%
+% Encuentra rutas entre Origen y Destino cuyo costo total sea
+% menor o igual al presupuesto indicado.
+ruta_en_presupuesto(Origen, Destino, PresupuestoMaximo, Ruta) :-
+    ruta_con_costo(Origen, Destino, Ruta, CostoTotal, _DistanciaTotal),
+    CostoTotal =< PresupuestoMaximo.
+
+
+% ruta_en_rango_costo/7
+% ruta_en_rango_costo(Origen, Destino, CostoMinimo, CostoMaximo,
+%                     Ruta, CostoTotal, DistanciaTotal).
+%
+% Encuentra rutas entre Origen y Destino cuyo costo total esté dentro
+% del rango [CostoMinimo, CostoMaximo] (incluyendo ambos extremos).
+ruta_en_rango_costo(
+    Origen,
+    Destino,
+    CostoMinimo,
+    CostoMaximo,
+    Ruta,
+    CostoTotal,
+    DistanciaTotal
+) :-
+    ruta_con_costo(Origen, Destino, Ruta, CostoTotal, DistanciaTotal),
+    CostoTotal >= CostoMinimo,
+    CostoTotal =< CostoMaximo.
+
+
+% contar_servicio_en_ruta/3
+% contar_servicio_en_ruta(Ruta, TipoServicio, Cantidad).
+%
+% Cuenta cuántos lugares dentro de Ruta tienen TipoServicio.
+% Nota:
+% - Se cuenta por lugar presente en la lista Ruta.
+% - Como las rutas de este sistema no repiten lugares, cada lugar se
+%   considera a lo sumo una vez por ruta.
+contar_servicio_en_ruta([], _TipoServicio, 0).
+contar_servicio_en_ruta([Lugar | Resto], TipoServicio, Cantidad) :-
+    contar_servicio_en_ruta(Resto, TipoServicio, CantidadResto),
+    (   servicio(Lugar, TipoServicio)
+    ->  Cantidad is CantidadResto + 1
+    ;   Cantidad is CantidadResto
+    ).
+
+
+% ruta_con_al_menos_n_turisticos/5
+% ruta_con_al_menos_n_turisticos(Origen, Destino, N,
+%                                Ruta, CantidadTuristicos).
+%
+% Encuentra rutas entre Origen y Destino que tengan al menos N lugares
+% con servicio turistico. También devuelve la cantidad encontrada.
+ruta_con_al_menos_n_turisticos(Origen, Destino, N, Ruta, CantidadTuristicos) :-
+    ruta(Origen, Destino, Ruta),
+    contar_servicio_en_ruta(Ruta, turistico, CantidadTuristicos),
+    CantidadTuristicos >= N.
+
+
+% ruta_con_multiples_condiciones/9
+% ruta_con_multiples_condiciones(
+%     Origen,
+%     Destino,
+%     PresupuestoMaximo,
+%     TipoCamino,
+%     ServicioRequerido,
+%     LugarObligatorio,
+%     Ruta,
+%     CostoTotal,
+%     DistanciaTotal
+% ).
+%
+% Encuentra rutas que cumplan simultáneamente:
+% - Costo total <= PresupuestoMaximo.
+% - Todos los tramos del tipo TipoCamino.
+% - Incluye al menos un lugar con ServicioRequerido.
+% - Pasa por LugarObligatorio.
+%
+% Este predicado reutiliza filtros ya creados para mantener el código
+% modular y fácil de mantener.
+ruta_con_multiples_condiciones(
+    Origen,
+    Destino,
+    PresupuestoMaximo,
+    TipoCamino,
+    ServicioRequerido,
+    LugarObligatorio,
+    Ruta,
+    CostoTotal,
+    DistanciaTotal
+) :-
+    ruta_en_presupuesto(Origen, Destino, PresupuestoMaximo, Ruta),
+    ruta_por_tipo(Origen, Destino, TipoCamino, Ruta),
+    ruta_pasa_por(Origen, Destino, LugarObligatorio, Ruta),
+    ruta_tiene_servicio(Ruta, ServicioRequerido),
+    ruta_con_costo(Origen, Destino, Ruta, CostoTotal, DistanciaTotal).
+
+
+% ---------------------------------------------------------
+% 10) EJEMPLOS DE CONSULTAS (PRESUPUESTO Y AVANZADAS)
+% ---------------------------------------------------------
+% ?- ruta_en_presupuesto(uruapan, morelia, 90, Ruta).
+% ?- ruta_en_rango_costo(uruapan, morelia, 70, 200, Ruta, Costo, Distancia).
+% ?- contar_servicio_en_ruta([uruapan, patzcuaro, morelia], turistico, Cantidad).
+% ?- ruta_con_al_menos_n_turisticos(uruapan, morelia, 2, Ruta, CantidadTuristicos).
+% ?- ruta_con_multiples_condiciones(
+%        morelia,
+%        tzintzuntzan,
+%        120,
+%        libre,
+%        turistico,
+%        patzcuaro,
+%        Ruta,
+%        Costo,
+%        Distancia
+%    ).

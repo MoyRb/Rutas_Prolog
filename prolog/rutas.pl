@@ -172,3 +172,91 @@ servicio(santa_clara_del_cobre, restaurante).
 
 camino(A, B, D, C, T) :- conexion(A, B, D, C, T).
 camino(A, B, D, C, T) :- conexion(B, A, D, C, T).
+
+
+% ---------------------------------------------------------
+% 5) BÚSQUEDA DE RUTAS (SIN REPETIR LUGARES)
+% ---------------------------------------------------------
+% En esta sección se implementa la lógica de búsqueda de rutas:
+% - ruta/3: obtiene una ruta posible entre Origen y Destino.
+% - ruta_con_costo/5: obtiene ruta, costo total y distancia total.
+%
+% Requisitos cubiertos:
+% - Recursividad: la búsqueda avanza de nodo en nodo con ruta_aux/6.
+% - Listas: se maneja la ruta como lista y los visitados como lista.
+% - Acumuladores: se acumulan costo y distancia de forma incremental.
+% - Control de ciclos: no se permiten nodos ya visitados.
+
+% ruta/3
+% ruta(Origen, Destino, Ruta).
+%
+% Encuentra una ruta posible entre Origen y Destino.
+% Ruta es una lista ordenada desde Origen hasta Destino.
+%
+% Ejemplo de salida:
+%   Ruta = [uruapan, patzcuaro, morelia]
+%
+% Nota:
+% Internamente usamos ruta_aux/6 para reutilizar la misma lógica
+% recursiva que también calcula costo y distancia.
+ruta(Origen, Destino, Ruta) :-
+    ruta_aux(Origen, Destino, [Origen], Ruta, 0, 0).
+
+
+% ruta_con_costo/5
+% ruta_con_costo(Origen, Destino, Ruta, CostoTotal, DistanciaTotal).
+%
+% Encuentra una ruta posible entre Origen y Destino y además calcula:
+% - CostoTotal: suma de costos de todos los tramos de la ruta.
+% - DistanciaTotal: suma de distancias de todos los tramos.
+ruta_con_costo(Origen, Destino, Ruta, CostoTotal, DistanciaTotal) :-
+    ruta_aux(Origen, Destino, [Origen], Ruta, CostoTotal, DistanciaTotal).
+
+
+% ruta_aux/6
+% ruta_aux(Actual, Destino, Visitados, Ruta, CostoTotal, DistanciaTotal).
+%
+% Predicado auxiliar recursivo para construir rutas sin ciclos.
+%
+% Parámetros:
+% - Actual: lugar donde estamos actualmente en la exploración.
+% - Destino: lugar objetivo al que queremos llegar.
+% - Visitados: lista de lugares ya recorridos en la rama actual.
+%              Sirve para evitar ciclos (no repetir lugares).
+% - Ruta: ruta final encontrada, desde Actual hasta Destino.
+% - CostoTotal: costo acumulado de la Ruta resultante.
+% - DistanciaTotal: distancia acumulada de la Ruta resultante.
+%
+% Caso base:
+% Si Actual ya es Destino, la ruta es una lista con ese único lugar,
+% y tanto costo como distancia son 0 (no hay más tramos por recorrer).
+ruta_aux(Destino, Destino, _Visitados, [Destino], 0, 0).
+
+% Caso recursivo:
+% 1) Elegimos un siguiente nodo (Siguiente) conectado a Actual usando
+%    camino/5 (bidireccional, basado en conexion/5).
+% 2) Verificamos que Siguiente no haya sido visitado para evitar ciclos.
+% 3) Continuamos la búsqueda recursiva desde Siguiente hasta Destino.
+% 4) Construimos la Ruta anteponiendo Actual a la subruta encontrada.
+% 5) Acumulamos costo y distancia sumando el tramo Actual->Siguiente.
+ruta_aux(Actual, Destino, Visitados, [Actual | RutaRestante], CostoTotal, DistanciaTotal) :-
+    camino(Actual, Siguiente, DistanciaTramo, CostoTramo, _TipoCamino),
+    \+ member(Siguiente, Visitados),
+    ruta_aux(
+        Siguiente,
+        Destino,
+        [Siguiente | Visitados],
+        RutaRestante,
+        CostoRestante,
+        DistanciaRestante
+    ),
+    CostoTotal is CostoTramo + CostoRestante,
+    DistanciaTotal is DistanciaTramo + DistanciaRestante.
+
+
+% ---------------------------------------------------------
+% 6) EJEMPLOS DE CONSULTAS
+% ---------------------------------------------------------
+% ?- ruta(uruapan, morelia, Ruta).
+% ?- ruta_con_costo(uruapan, morelia, Ruta, Costo, Distancia).
+% ?- ruta_con_costo(uruapan, lazaro_cardenas, Ruta, Costo, Distancia).

@@ -347,3 +347,129 @@ ruta_mas_larga(Origen, Destino, Ruta, CostoTotal, DistanciaTotal) :-
 % ?- ruta_mas_larga(uruapan, morelia, Ruta, Costo, Distancia).
 % ?- ruta_con_costo(uruapan, morelia, Ruta, Costo, Distancia).
 % ?- ruta_con_costo(uruapan, lazaro_cardenas, Ruta, Costo, Distancia).
+
+% ---------------------------------------------------------
+% 7) FILTROS AVANZADOS DE RUTAS
+% ---------------------------------------------------------
+% En esta sección se agregan predicados para filtrar rutas según:
+% - Lugar intermedio obligatorio.
+% - Servicios presentes en la ruta.
+% - Tipo de camino (cuota/libre).
+% - Combinación de tipos de camino (ruta mixta).
+
+% ruta_pasa_por/4
+% ruta_pasa_por(Origen, Destino, LugarIntermedio, Ruta).
+%
+% Encuentra rutas entre Origen y Destino que incluyan LugarIntermedio.
+% Se apoya en ruta/3 y verifica membresía en la lista resultante.
+ruta_pasa_por(Origen, Destino, LugarIntermedio, Ruta) :-
+    ruta(Origen, Destino, Ruta),
+    member(LugarIntermedio, Ruta).
+
+
+% ruta_con_servicio/4
+% ruta_con_servicio(Origen, Destino, TipoServicio, Ruta).
+%
+% Encuentra rutas entre Origen y Destino donde al menos un lugar de la
+% ruta tenga el servicio indicado (gasolinera, turistico, hotel, etc.).
+ruta_con_servicio(Origen, Destino, TipoServicio, Ruta) :-
+    ruta(Origen, Destino, Ruta),
+    ruta_tiene_servicio(Ruta, TipoServicio).
+
+% ruta_tiene_servicio/2
+% ruta_tiene_servicio(Ruta, TipoServicio).
+%
+% Predicado auxiliar recursivo para verificar si existe al menos un lugar
+% dentro de Ruta que tenga TipoServicio.
+% - Caso base implícito: la lista vacía falla (no hay servicio).
+% - Caso éxito inmediato: la cabeza tiene el servicio.
+% - Caso recursivo: buscar en el resto de la ruta.
+ruta_tiene_servicio([Lugar | _], TipoServicio) :-
+    servicio(Lugar, TipoServicio).
+ruta_tiene_servicio([_ | Resto], TipoServicio) :-
+    ruta_tiene_servicio(Resto, TipoServicio).
+
+
+% ruta_con_gasolinera/3
+% ruta_con_gasolinera(Origen, Destino, Ruta).
+%
+% Especialización de ruta_con_servicio/4 para servicio gasolinera.
+ruta_con_gasolinera(Origen, Destino, Ruta) :-
+    ruta_con_servicio(Origen, Destino, gasolinera, Ruta).
+
+
+% ruta_turistica/3
+% ruta_turistica(Origen, Destino, Ruta).
+%
+% Encuentra rutas que incluyan al menos un lugar turístico.
+ruta_turistica(Origen, Destino, Ruta) :-
+    ruta_con_servicio(Origen, Destino, turistico, Ruta).
+
+
+% tipos_de_ruta/2
+% tipos_de_ruta(Ruta, Tipos).
+%
+% Dada una ruta (lista de lugares), obtiene la lista de tipos de camino
+% usados entre cada par consecutivo de lugares.
+%
+% Ejemplo:
+% ?- tipos_de_ruta([uruapan, patzcuaro, morelia], Tipos).
+% Tipos = [libre, libre].
+%
+% Casos base:
+% - Ruta vacía o con un solo nodo -> no hay tramos, por lo tanto [].
+tipos_de_ruta([], []).
+tipos_de_ruta([_], []).
+
+% Caso recursivo:
+% 1) Tomar dos lugares consecutivos A y B.
+% 2) Obtener el tipo del tramo con camino/5.
+% 3) Continuar recursivamente desde B.
+tipos_de_ruta([A, B | Resto], [Tipo | TiposResto]) :-
+    camino(A, B, _Distancia, _Costo, Tipo),
+    tipos_de_ruta([B | Resto], TiposResto).
+
+
+% ruta_por_tipo/4
+% ruta_por_tipo(Origen, Destino, TipoCamino, Ruta).
+%
+% Encuentra rutas entre Origen y Destino donde TODOS los tramos sean del
+% tipo indicado (cuota o libre).
+ruta_por_tipo(Origen, Destino, TipoCamino, Ruta) :-
+    ruta(Origen, Destino, Ruta),
+    tipos_de_ruta(Ruta, Tipos),
+    todos_del_tipo(Tipos, TipoCamino).
+
+% todos_del_tipo/2
+% todos_del_tipo(Tipos, Tipo).
+%
+% Predicado auxiliar recursivo:
+% verifica que todos los elementos de la lista Tipos sean Tipo.
+% - La lista vacía cumple por definición.
+todos_del_tipo([], _Tipo).
+todos_del_tipo([Tipo | Resto], Tipo) :-
+    todos_del_tipo(Resto, Tipo).
+
+
+% ruta_mixta/3
+% ruta_mixta(Origen, Destino, Ruta).
+%
+% Encuentra rutas que combinen al menos un tramo de cuota y al menos uno
+% de libre.
+ruta_mixta(Origen, Destino, Ruta) :-
+    ruta(Origen, Destino, Ruta),
+    tipos_de_ruta(Ruta, Tipos),
+    member(cuota, Tipos),
+    member(libre, Tipos).
+
+
+% ---------------------------------------------------------
+% 8) EJEMPLOS DE CONSULTAS (FILTROS AVANZADOS)
+% ---------------------------------------------------------
+% ?- ruta_pasa_por(uruapan, morelia, patzcuaro, Ruta).
+% ?- ruta_con_servicio(uruapan, morelia, hotel, Ruta).
+% ?- ruta_con_gasolinera(tacambaro, lazaro_cardenas, Ruta).
+% ?- ruta_turistica(zamora, morelia, Ruta).
+% ?- tipos_de_ruta([uruapan, patzcuaro, morelia], Tipos).
+% ?- ruta_por_tipo(morelia, quiroga, libre, Ruta).
+% ?- ruta_mixta(morelia, lazaro_cardenas, Ruta).

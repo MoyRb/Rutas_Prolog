@@ -259,4 +259,91 @@ ruta_aux(Actual, Destino, Visitados, [Actual | RutaRestante], CostoTotal, Distan
 % ---------------------------------------------------------
 % ?- ruta(uruapan, morelia, Ruta).
 % ?- ruta_con_costo(uruapan, morelia, Ruta, Costo, Distancia).
+
+
+% ---------------------------------------------------------
+% 7) CLASIFICACIÓN DE RUTAS
+% ---------------------------------------------------------
+% En esta sección reunimos y clasificamos todas las rutas posibles entre
+% dos lugares, usando el predicado findall/3.
+
+% todas_las_rutas/3
+% todas_las_rutas(Origen, Destino, Rutas).
+%
+% Devuelve en Rutas una lista con TODAS las rutas posibles entre Origen
+% y Destino. Cada elemento tiene la forma:
+%   ruta_info(Ruta, CostoTotal, DistanciaTotal)
+%
+% ¿Qué hace findall/3?
+% - Sintaxis: findall(Plantilla, Objetivo, Lista).
+% - Ejecuta Objetivo todas las veces que pueda.
+% - En cada solución, guarda en Lista una copia de Plantilla.
+% - Si no hay soluciones, devuelve Lista = [] (lista vacía).
+todas_las_rutas(Origen, Destino, Rutas) :-
+    findall(
+        ruta_info(Ruta, CostoTotal, DistanciaTotal),
+        ruta_con_costo(Origen, Destino, Ruta, CostoTotal, DistanciaTotal),
+        Rutas
+    ).
+
+
+% ruta_mas_barata/5
+% Selecciona la ruta con menor costo total.
+ruta_mas_barata(Origen, Destino, Ruta, CostoTotal, DistanciaTotal) :-
+    todas_las_rutas(Origen, Destino, Rutas),
+    findall(
+        Costo-ruta_info(R, Costo, Distancia),
+        member(ruta_info(R, Costo, Distancia), Rutas),
+        ParesCostoRuta
+    ),
+    keysort(ParesCostoRuta, [CostoTotal-ruta_info(Ruta, CostoTotal, DistanciaTotal) | _]).
+
+
+% ruta_mas_cara/5
+% Selecciona la ruta con mayor costo total.
+ruta_mas_cara(Origen, Destino, Ruta, CostoTotal, DistanciaTotal) :-
+    todas_las_rutas(Origen, Destino, Rutas),
+    findall(
+        Costo-ruta_info(R, Costo, Distancia),
+        member(ruta_info(R, Costo, Distancia), Rutas),
+        ParesCostoRuta
+    ),
+    keysort(ParesCostoRuta, Ordenadas),
+    last(Ordenadas, CostoTotal-ruta_info(Ruta, CostoTotal, DistanciaTotal)).
+
+
+% ruta_mas_corta/5
+% Selecciona la ruta con menor distancia total.
+ruta_mas_corta(Origen, Destino, Ruta, CostoTotal, DistanciaTotal) :-
+    todas_las_rutas(Origen, Destino, Rutas),
+    findall(
+        Distancia-ruta_info(R, Costo, Distancia),
+        member(ruta_info(R, Costo, Distancia), Rutas),
+        ParesDistanciaRuta
+    ),
+    keysort(ParesDistanciaRuta, [DistanciaTotal-ruta_info(Ruta, CostoTotal, DistanciaTotal) | _]).
+
+
+% ruta_mas_larga/5
+% Selecciona la ruta con mayor distancia total.
+ruta_mas_larga(Origen, Destino, Ruta, CostoTotal, DistanciaTotal) :-
+    todas_las_rutas(Origen, Destino, Rutas),
+    findall(
+        Distancia-ruta_info(R, Costo, Distancia),
+        member(ruta_info(R, Costo, Distancia), Rutas),
+        ParesDistanciaRuta
+    ),
+    keysort(ParesDistanciaRuta, Ordenadas),
+    last(Ordenadas, DistanciaTotal-ruta_info(Ruta, CostoTotal, DistanciaTotal)).
+
+
+% ---------------------------------------------------------
+% 8) EJEMPLOS DE CONSULTAS (CLASIFICACIÓN)
+% ---------------------------------------------------------
+% ?- todas_las_rutas(uruapan, morelia, Rutas).
+% ?- ruta_mas_barata(uruapan, morelia, Ruta, Costo, Distancia).
+% ?- ruta_mas_cara(uruapan, morelia, Ruta, Costo, Distancia).
+% ?- ruta_mas_corta(uruapan, morelia, Ruta, Costo, Distancia).
+% ?- ruta_mas_larga(uruapan, morelia, Ruta, Costo, Distancia).
+% ?- ruta_con_costo(uruapan, morelia, Ruta, Costo, Distancia).
 % ?- ruta_con_costo(uruapan, lazaro_cardenas, Ruta, Costo, Distancia).

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema Experto de Rutas Turísticas</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body>
+  <div class="animated-bg"></div>
+
+  <main class="container">
+    <header class="hero glass-card">
+      <h1>Sistema Experto de Rutas Turísticas</h1>
+      <p>Consultas inteligentes con Prolog</p>
+    </header>
+
+    <section class="panel glass-card">
+      <h2>Consulta de rutas</h2>
+      <form id="route-form" class="form-grid">
+        <label>
+          Origen
+          <select id="origen" name="origen" required></select>
+        </label>
+
+        <label>
+          Destino
+          <select id="destino" name="destino" required></select>
+        </label>
+
+        <label>
+          Filtro
+          <select id="filtro" name="filtro" required>
+            <option value="rapida">Más rápida</option>
+            <option value="economica">Más económica</option>
+            <option value="turistica">Más turística</option>
+            <option value="personalizada">Personalizada</option>
+          </select>
+        </label>
+
+        <label>
+          Presupuesto
+          <input id="presupuesto" name="presupuesto" type="number" min="0" step="1" placeholder="Ej. 1500" />
+        </label>
+
+        <label>
+          Tipo de camino
+          <select id="tipo_camino" name="tipo_camino">
+            <option value="">Cualquiera</option>
+            <option value="carretera">Carretera</option>
+            <option value="autopista">Autopista</option>
+            <option value="terraceria">Terracería</option>
+          </select>
+        </label>
+
+        <label>
+          Servicio requerido
+          <select id="servicio" name="servicio">
+            <option value="">Ninguno</option>
+            <option value="gasolinera">Gasolinera</option>
+            <option value="restaurante">Restaurante</option>
+            <option value="hospital">Hospital</option>
+            <option value="hotel">Hotel</option>
+          </select>
+        </label>
+
+        <label>
+          Lugar obligatorio
+          <select id="lugar_obligatorio" name="lugar_obligatorio">
+            <option value="">Ninguno</option>
+          </select>
+        </label>
+
+        <label>
+          Costo mínimo
+          <input id="costo_min" name="costo_min" type="number" min="0" step="1" />
+        </label>
+
+        <label>
+          Costo máximo
+          <input id="costo_max" name="costo_max" type="number" min="0" step="1" />
+        </label>
+
+        <label>
+          Mínimo de puntos turísticos
+          <input id="min_puntos" name="min_puntos" type="number" min="0" step="1" />
+        </label>
+
+        <button type="submit" class="btn-neon">Buscar rutas</button>
+      </form>
+
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>Procesando consulta...</span>
+      </div>
+
+      <div id="message" class="message hidden"></div>
+    </section>
+
+    <section class="panel glass-card">
+      <h2>Resultados</h2>
+      <div id="results" class="results"></div>
+    </section>
+
+    <section class="panel glass-card">
+      <h2>Visualización gráfica de ruta</h2>
+      <div id="graph" class="graph"></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Dependencias del backend Flask + Prolog
 Flask==3.0.3
-pyswip==0.2.11
+pyswip==0.3.3
 
 # Instalación:
 #   pip install -r requirements.txt

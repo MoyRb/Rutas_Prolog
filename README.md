@@ -149,3 +149,37 @@ Este sistema experto aporta valor al automatizar el análisis de rutas con regla
 - Mantén actualizada la base de conocimiento (`prolog/rutas.pl`) para mejorar la calidad de las recomendaciones.
 - Verifica que SWI-Prolog esté correctamente instalado y accesible desde terminal.
 - Si presentas el proyecto, combina pruebas desde la web y consultas directas en Prolog para evidenciar el funcionamiento completo.
+
+---
+
+## 11) Consultas recomendadas para la demostración
+
+Estas consultas están pensadas para mostrar diferentes capacidades del sistema frente al profesor:
+
+```prolog
+% 1) Ruta básica
+?- ruta(morelia, uruapan, Ruta).
+
+% 2) Ruta con costo y distancia
+?- ruta_con_costo(morelia, lazaro_cardenas, Ruta, Costo, Distancia).
+
+% 3) Comparación por optimización
+?- ruta_mas_barata(morelia, lazaro_cardenas, Ruta, Costo, Distancia).
+?- ruta_mas_corta(morelia, lazaro_cardenas, Ruta, Costo, Distancia).
+
+% 4) Filtros por características
+?- ruta_con_gasolinera(morelia, lazaro_cardenas, Ruta).
+?- ruta_turistica(morelia, lazaro_cardenas, Ruta).
+?- ruta_por_tipo(morelia, uruapan, libre, Ruta).
+?- ruta_mixta(morelia, lazaro_cardenas, Ruta).
+
+% 5) Restricciones de negocio
+?- ruta_en_presupuesto(morelia, lazaro_cardenas, 500, Ruta).
+?- ruta_en_rango_costo(morelia, lazaro_cardenas, 200, 700, Ruta, Costo, Distancia).
+?- ruta_con_al_menos_n_turisticos(morelia, lazaro_cardenas, 2, Ruta, N).
+
+% 6) Consulta avanzada combinada
+?- ruta_con_multiples_condiciones(morelia, lazaro_cardenas, 900, libre, turistico, uruapan, 2, Ruta, Costo).
+```
+
+Sugerencia para la presentación: ejecuta cada bloque y explica cómo cambia el resultado cuando agregas más restricciones.

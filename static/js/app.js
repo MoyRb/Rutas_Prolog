@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error('No se pudieron cargar los lugares.');
 
       const data = await response.json();
-      const lugares = Array.isArray(data) ? data : data.lugares || [];
+      const lugares = Array.isArray(data) ? data : data.resultados || data.lugares || [];
 
       if (!lugares.length) {
         showMessage('No hay lugares disponibles para consultar.', 'info');
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       lugar_obligatorio: form.lugar_obligatorio.value || null,
       costo_min: form.costo_min.value ? Number(form.costo_min.value) : null,
       costo_max: form.costo_max.value ? Number(form.costo_max.value) : null,
-      min_puntos: form.min_puntos.value ? Number(form.min_puntos.value) : null
+      min_turisticos: form.min_puntos.value ? Number(form.min_puntos.value) : null
     };
 
     try {
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(detail);
       }
 
-      const routes = Array.isArray(data) ? data : data.rutas || [];
+      const routes = Array.isArray(data) ? data : data.resultados || data.rutas || [];
       renderResults(routes, payload.filtro);
     } catch (error) {
       resultsEl.innerHTML = '';

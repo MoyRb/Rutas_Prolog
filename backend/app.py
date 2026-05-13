@@ -168,10 +168,14 @@ def lugares() -> Any:
 
 
 @app.get("/api/servicios")
-def servicios() -> Any:
+def obtener_servicios() -> Any:
     """Regresa tipos de servicios disponibles en la base de conocimiento."""
-    datos = sorted({str(sol["S"]) for sol in prolog.query("servicio(_, S)")})
-    return jsonify({"success": True, "resultados": datos})
+    try:
+        resultados = list(prolog.query("servicio(_, Tipo)."))
+        servicios = sorted(set(str(r["Tipo"]) for r in resultados))
+        return jsonify({"success": True, "resultados": servicios})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "resultados": []}), 500
 
 
 @app.post("/api/rutas")

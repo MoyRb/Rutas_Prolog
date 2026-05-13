@@ -1,6 +1,7 @@
 """Backend Flask para consultar rutas turísticas en Prolog (rutas.pl)."""
 
 from pathlib import Path
+from threading import Lock
 from typing import Any, Dict, List
 
 from flask import Flask, jsonify, request, send_from_directory
@@ -18,6 +19,13 @@ app = Flask(
 prolog = Prolog()
 PROLOG_FILE = BASE_DIR / "prolog" / "rutas.pl"
 prolog.consult(str(PROLOG_FILE))
+prolog_lock = Lock()
+
+
+def consultar_prolog(consulta: str) -> List[Dict[str, Any]]:
+    """Ejecuta una consulta Prolog de forma serializada y segura."""
+    with prolog_lock:
+        return list(prolog.query(consulta))
 
 # Filtros permitidos por el backend.
 FILTROS_VALIDOS = {
@@ -50,7 +58,7 @@ def _obtener_rutas(origen: str, destino: str) -> List[Dict[str, Any]]:
     """Obtiene todas las rutas posibles desde Prolog usando ruta_con_costo/5."""
     consulta = f"ruta_con_costo({origen}, {destino}, Ruta, Costo, Distancia)"
     resultados = []
-    for sol in prolog.query(consulta):
+    for sol in consultar_prolog(consulta):
         ruta = [str(n) for n in sol["Ruta"]]
         resultados.append(
             {
@@ -65,7 +73,7 @@ def _obtener_rutas(origen: str, destino: str) -> List[Dict[str, Any]]:
 def _cumple_servicio(ruta: List[str], servicio: str) -> bool:
     """Valida si al menos un lugar de la ruta tiene el servicio solicitado."""
     for lugar in ruta:
-        if list(prolog.query(f"servicio({lugar}, {servicio})")):
+        if consultar_prolog(f"servicio({lugar}, {servicio})"):
             return True
     return False
 
@@ -75,7 +83,7 @@ def _es_mixta(ruta: List[str]) -> bool:
     tipos = set()
     for i in range(len(ruta) - 1):
         a, b = ruta[i], ruta[i + 1]
-        for sol in prolog.query(f"camino({a}, {b}, _, _, Tipo)"):
+        for sol in consultar_prolog(f"camino({a}, {b}, _, _, Tipo)"):
             tipos.add(str(sol["Tipo"]))
             break
     return "cuota" in tipos and "libre" in tipos
@@ -83,7 +91,7 @@ def _es_mixta(ruta: List[str]) -> bool:
 
 def _contar_turisticos(ruta: List[str]) -> int:
     """Cuenta lugares turísticos presentes en una ruta."""
-    return sum(1 for l in ruta if list(prolog.query(f"servicio({l}, turistico)")))
+    return sum(1 for l in ruta if consultar_prolog(f"servicio({l}, turistico)"))
 
 
 def _filtrar_rutas(rutas: List[Dict[str, Any]], data: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -117,7 +125,7 @@ def _filtrar_rutas(rutas: List[Dict[str, Any]], data: Dict[str, Any]) -> List[Di
             for r in rutas
             if all(
                 list(
-                    prolog.query(
+                    consultar_prolog(
                         f"camino({r['ruta'][i]}, {r['ruta'][i+1]}, _, _, {tipo})"
                     )
                 )
@@ -148,7 +156,7 @@ def _filtrar_rutas(rutas: List[Dict[str, Any]], data: Dict[str, Any]) -> List[Di
             if r["costo"] <= presupuesto
             and (not lugar or lugar in r["ruta"])
             and (not servicio or _cumple_servicio(r["ruta"], servicio))
-            and (not tipo or all(list(prolog.query(f"camino({r['ruta'][i]}, {r['ruta'][i+1]}, _, _, {tipo})")) for i in range(len(r["ruta"]) - 1)))
+            and (not tipo or all(consultar_prolog(f"camino({r['ruta'][i]}, {r['ruta'][i+1]}, _, _, {tipo})") for i in range(len(r["ruta"]) - 1)))
             and _contar_turisticos(r["ruta"]) >= minimo_turisticos
         ]
     return []
@@ -163,15 +171,19 @@ def home() -> Any:
 @app.get("/api/lugares")
 def lugares() -> Any:
     """Regresa lugares disponibles en la base de conocimiento."""
-    datos = sorted({str(sol["X"]) for sol in prolog.query("lugar(X)")})
-    return jsonify({"success": True, "resultados": datos})
+    try:
+        resultados = consultar_prolog("lugar(Lugar)")
+        lugares = sorted(set(str(r["Lugar"]) for r in resultados))
+        return jsonify({"success": True, "resultados": lugares})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "resultados": []}), 500
 
 
 @app.get("/api/servicios")
 def obtener_servicios() -> Any:
     """Regresa tipos de servicios disponibles en la base de conocimiento."""
     try:
-        resultados = list(prolog.query("servicio(_, Tipo)."))
+        resultados = consultar_prolog("servicio(_, Tipo)")
         servicios = sorted(set(str(r["Tipo"]) for r in resultados))
         return jsonify({"success": True, "resultados": servicios})
     except Exception as e:
